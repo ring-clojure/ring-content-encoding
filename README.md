@@ -4,6 +4,11 @@
 application. Supports [Brotli][], [Deflate][], [GZip][] and
 [ZStandard][] content encoding.
 
+> [!NOTE]
+> Many reverse proxies and CDNs will automatically handle content
+> encoding for you. However, you may want more control over how content
+> encoding is handled, or you may not be using a reverse proxy at all.
+
 [ring]: https://github.com/ring-clojure/ring
 [brotli]: https://github.com/google/brotli
 [deflate]: https://datatracker.ietf.org/doc/html/rfc1951
