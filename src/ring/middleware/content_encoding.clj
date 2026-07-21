@@ -7,7 +7,7 @@
 (defn gzip-encoder ^OutputStream [^OutputStream out]
   (GZIPOutputStream. out))
 
-(def preferred-encoders
+(def default-encoder-weights
   {"gzip" 2
    "identity" 1})
 
@@ -29,15 +29,16 @@
   (when header
     (reduce assoc-encoding {} (str/split header #"\s*,\s*"))))
 
-(defn- encoding-comparator [a b]
-  (if (= (val a) (val b))
-    (> (preferred-encoders (key a)) (preferred-encoders (key b)))
-    (> (val a) (val b))))
+(defn- encoding-comparator [encoder-weights]
+  (fn [a b]
+    (if (= (val a) (val b))
+      (> (encoder-weights (key a)) (encoder-weights (key b)))
+      (> (val a) (val b)))))
 
-(defn- best-encoding [encodings encoders]
+(defn- best-encoding [encodings encoders encoder-weights]
   (->> encodings
        (filter (comp encoders key))
-       (sort encoding-comparator)
+       (sort (encoding-comparator encoder-weights))
        (some key)))
 
 (defn- encoded-body [body encoder]
@@ -54,9 +55,11 @@
   ([response request] (content-encoding-response response request {}))
   ([response
     {{:strs [accept-encoding]} :headers}
-    {:keys [encoders] :or {encoders default-encoders}}]
+    {:keys [encoders encoder-weights]
+     :or {encoders        default-encoders
+          encoder-weights default-encoder-weights}}]
    (let [encodings (parse-accept-encoding accept-encoding)]
-     (if-some [encoding (best-encoding encodings encoders)]
+     (if-some [encoding (best-encoding encodings encoders encoder-weights)]
        (if (= encoding "identity")
          response
          (apply-content-encoding response (find encoders encoding)))
