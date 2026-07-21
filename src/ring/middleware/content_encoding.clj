@@ -46,9 +46,18 @@
     (write-body-to-stream [_ response out]
       (p/write-body-to-stream body response (encoder out)))))
 
+(defn- find-header [headers ^String name]
+  (some #(when (.equalsIgnoreCase name (key %)) %) headers))
+
+(defn- remove-header [headers name]
+  (if-some [kv (find-header headers name)]
+    (dissoc headers (key kv))
+    headers))
+
 (defn- apply-content-encoding [response [encoding encoder]]
   (-> response
       (assoc-in [:headers "Content-Encoding"] encoding)
+      (update :headers remove-header "content-length")
       (update :body encoded-body encoder)))
 
 (defn content-encoding-response

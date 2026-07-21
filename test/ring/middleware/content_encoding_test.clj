@@ -44,3 +44,14 @@
             :headers {"Content-Type" "text/plain; charset=utf-8"}}
            (dissoc response :body)))))
 
+(deftest remove-content-length-test
+  (let [response (ce/content-encoding-response
+                  {:status 200
+                   :headers {"Content-Type"   "text/plain; charset=utf-8"
+                             "Content-Length" "11"}
+                   :body    "Hello World"}
+                  {:headers {"accept-encoding" "gzip"}})]
+    (is (= {:status 200
+            :headers {"Content-Type"     "text/plain; charset=utf-8"
+                      "Content-Encoding" "gzip"}}
+           (dissoc response :body)))))
