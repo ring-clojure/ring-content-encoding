@@ -15,7 +15,7 @@
   {"gzip" gzip-encoder
    "identity" identity})
 
-(def re-accept-encoding
+(def ^:private re-accept-encoding
   #"(?x)
     ([!\#$%&'*\-+.0-9A-Z\^_`a-z\|~]+)              # token
     (?:\s*;\s*q=(0(?:\.\d{0,3})?|1(?:\.0{0,3})))?  # weight")
