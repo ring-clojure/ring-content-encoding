@@ -1,5 +1,6 @@
 (ns ring.middleware.content-encoding
-  (:require [ring.core.protocols :as p])
+  (:require [clojure.string :as str]
+            [ring.core.protocols :as p])
   (:import [java.io OutputStream]
            [java.util.zip GZIPOutputStream]))
 
@@ -10,7 +11,8 @@
   {"gzip" gzip-encoder})
 
 (defn- parse-accept-encoding [s]
-  {s 1.0}) ;; simple case
+  (when s
+    (reduce #(assoc %1 %2 1.0) {} (str/split s #"\s*,\s*"))))
 
 (defn- best-encoding [encodings encoders]
   (->> encodings (sort-by val) (map key) (filter encoders) first))
