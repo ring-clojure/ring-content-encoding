@@ -11,7 +11,7 @@
   {"gzip" 2
    "identity" 1})
 
-(def encoders
+(def default-encoders
   {"gzip" gzip-encoder
    "identity" identity})
 
@@ -24,7 +24,7 @@
   (if-some [[_ enc weight] (re-matches re-accept-encoding enc-str)]
     (assoc encodings enc (if weight (Double/parseDouble weight) 1.0))
     encodings))
-    
+
 (defn- parse-accept-encoding [header]
   (when header
     (reduce assoc-encoding {} (str/split header #"\s*,\s*"))))
@@ -34,7 +34,7 @@
     (> (preferred-encoders (key a)) (preferred-encoders (key b)))
     (> (val a) (val b))))
 
-(defn- best-encoding [encodings]
+(defn- best-encoding [encodings encoders]
   (->> encodings
        (filter (comp encoders key))
        (sort encoding-comparator)
@@ -50,21 +50,26 @@
       (assoc-in [:headers "Content-Encoding"] encoding)
       (update :body encoded-body encoder)))
 
-(defn content-encoding-response [response request]
-  (let [{{:strs [accept-encoding]} :headers} request
-        encodings (parse-accept-encoding accept-encoding)]
-    (if-some [encoding (best-encoding encodings)]
-      (if (= encoding "identity")
-        response
-        (apply-content-encoding response (find encoders encoding)))
-      response)))
+(defn content-encoding-response
+  ([response request] (content-encoding-response response request {}))
+  ([response request options]
+   (let [{:keys [encoders] :or {encoders default-encoders}} options
+         {{:strs [accept-encoding]} :headers} request
+         encodings (parse-accept-encoding accept-encoding)]
+     (if-some [encoding (best-encoding encodings encoders)]
+       (if (= encoding "identity")
+         response
+         (apply-content-encoding response (find encoders encoding)))
+       response))))
 
-(defn wrap-content-encoding [handler]
-  (fn
-    ([request]
-     (-> (handler request)
-         (content-encoding-response request)))
-    ([request respond raise]
-     (handler request
-              #(respond (content-encoding-response % request))
-              raise))))
+(defn wrap-content-encoding
+  ([handler] (wrap-content-encoding handler {}))
+  ([handler options]
+   (fn
+     ([request]
+      (-> (handler request)
+          (content-encoding-response request options)))
+     ([request respond raise]
+      (handler request
+               #(respond (content-encoding-response % request options))
+               raise)))))
