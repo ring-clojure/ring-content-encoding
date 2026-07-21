@@ -1,5 +1,6 @@
 (ns ring.middleware.content-encoding-test
-  (:require [clojure.test :refer [deftest is]]
+  (:require [clojure.java.io :as io]
+            [clojure.test :refer [deftest is]]
             [ring.core.protocols :as p]
             [ring.middleware.content-encoding :as ce])
   (:import [java.io ByteArrayOutputStream]))
@@ -67,4 +68,14 @@
     (is (= {:status 200
             :headers {"Content-Type"   "text/plain; charset=utf-8"
                       "Content-Length" "11"}}
+           (dissoc response :body)))))
+
+(deftest images-not-compressed-test
+  (let [response (ce/content-encoding-response
+                  {:status 200
+                   :headers {"Content-Type" "image/png"}
+                   :body    (io/file "test/ring/middleware/test_image.png")}
+                  {:headers {"accept-encoding" "gzip"}})]
+    (is (= {:status 200
+            :headers {"Content-Type" "image/png"}}
            (dissoc response :body)))))

@@ -18,6 +18,53 @@
   {"gzip" gzip-encoder
    "identity" identity})
 
+(def default-media-types
+  #{"application/eot"
+    "application/font"
+    "application/font-sfnt"
+    "application/font-woff"
+    "application/geo+json"
+    "application/graphql+json"
+    "application/javascript"
+    "application/javascript-binast"
+    "application/json"
+    "application/ld+json"
+    "application/manifest+json"
+    "application/opentype"
+    "application/otf"
+    "application/rss+xml"
+    "application/truetype"
+    "application/ttf"
+    "application/vnd.api+json"
+    "application/vnd.ms-fontobject"
+    "application/wasm"
+    "application/x-javascript"
+    "application/x-opentype"
+    "application/x-otf"
+    "application/x-protobuf"
+    "application/x-ttf"
+    "application/xhtml+xml"
+    "application/xml"
+    "font/otf"
+    "font/ttf"
+    "font/x-woff"
+    "image/svg+xml"
+    "image/vnd.microsoft.icon"
+    "image/x-icon"
+    "multipart/bag"
+    "multipart/mixed"
+    "text/css"
+    "text/html"
+    "text/javascript"
+    "text/js"
+    "text/plain"
+    "text/richtext"
+    "text/x-component"
+    "text/x-java-source"
+    "text/x-markdown"
+    "text/x-script"
+    "text/xml"})
+
 (def ^:private re-accept-encoding
   #"(?x)
     ([!\#$%&'*\-+.0-9A-Z\^_`a-z\|~]+)              # token
@@ -67,21 +114,31 @@
             (update :headers dissoc (key content-length)))
           (update :body encoded-body encoder)))))
 
+(def ^:private re-content-type #"^[^\s;]+")
+
+(defn- allowed-media-type? [{:keys [headers]} media-types]
+  (when-some [content-type (some-> (find-header headers "content-type") val)]
+    (when-some [media-type (re-find re-content-type content-type)]
+      (contains? media-types media-type))))
+
 (defn content-encoding-response
   ([response request] (content-encoding-response response request {}))
   ([response
     {{:strs [accept-encoding]} :headers}
-    {:keys [encoders encoder-weights encoder-minimums]
+    {:keys [encoders encoder-weights encoder-minimums media-types]
      :or {encoders         default-encoders
           encoder-weights  default-encoder-weights
-          encoder-minimums default-encoder-minimums}}]
-   (let [encodings (parse-accept-encoding accept-encoding)]
-     (if-some [encoding (best-encoding encodings encoders encoder-weights)]
-       (if (= encoding "identity")
-         response
-         (let [encoder (find encoders encoding)]
-           (apply-content-encoding response encoder encoder-minimums)))
-       response))))
+          encoder-minimums default-encoder-minimums
+          media-types      default-media-types}}]
+   (if (allowed-media-type? response media-types)
+     (let [encodings (parse-accept-encoding accept-encoding)]
+       (if-some [encoding (best-encoding encodings encoders encoder-weights)]
+         (if (= encoding "identity")
+           response
+           (let [encoder (find encoders encoding)]
+             (apply-content-encoding response encoder encoder-minimums)))
+         response))
+     response)))
 
 (defn wrap-content-encoding
   ([handler] (wrap-content-encoding handler {}))
