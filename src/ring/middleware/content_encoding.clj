@@ -11,6 +11,9 @@
   {"gzip" 2
    "identity" 1})
 
+(def default-encoder-minimums
+  {"gzip" 48})
+
 (def default-encoders
   {"gzip" gzip-encoder
    "identity" identity})
@@ -49,29 +52,35 @@
 (defn- find-header [headers ^String name]
   (some #(when (.equalsIgnoreCase name (key %)) %) headers))
 
-(defn- remove-header [headers name]
-  (if-some [kv (find-header headers name)]
-    (dissoc headers (key kv))
-    headers))
+(defn- under-minimum-length? [content-length min-length]
+  (and content-length (>= min-length (Long/parseLong (val content-length)))))
 
-(defn- apply-content-encoding [response [encoding encoder]]
-  (-> response
-      (assoc-in [:headers "Content-Encoding"] encoding)
-      (update :headers remove-header "content-length")
-      (update :body encoded-body encoder)))
+(defn- apply-content-encoding
+  [{:keys [headers] :as response} [encoding encoder] encoder-mins]
+  (let [content-length (find-header headers "content-length")
+        min-length     (encoder-mins encoding)]
+    (if (under-minimum-length? content-length min-length)
+      response
+      (-> response
+          (assoc-in [:headers "Content-Encoding"] encoding)
+          (cond-> content-length
+            (update :headers dissoc (key content-length)))
+          (update :body encoded-body encoder)))))
 
 (defn content-encoding-response
   ([response request] (content-encoding-response response request {}))
   ([response
     {{:strs [accept-encoding]} :headers}
-    {:keys [encoders encoder-weights]
-     :or {encoders        default-encoders
-          encoder-weights default-encoder-weights}}]
+    {:keys [encoders encoder-weights encoder-minimums]
+     :or {encoders         default-encoders
+          encoder-weights  default-encoder-weights
+          encoder-minimums default-encoder-minimums}}]
    (let [encodings (parse-accept-encoding accept-encoding)]
      (if-some [encoding (best-encoding encodings encoders encoder-weights)]
        (if (= encoding "identity")
          response
-         (apply-content-encoding response (find encoders encoding)))
+         (let [encoder (find encoders encoding)]
+           (apply-content-encoding response encoder encoder-minimums)))
        response))))
 
 (defn wrap-content-encoding

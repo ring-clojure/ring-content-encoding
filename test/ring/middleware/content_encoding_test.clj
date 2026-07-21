@@ -45,6 +45,19 @@
            (dissoc response :body)))))
 
 (deftest remove-content-length-test
+  (let [response
+        (ce/content-encoding-response
+         {:status 200
+          :headers {"Content-Type"   "text/plain; charset=utf-8"
+                    "Content-Length" "56"}
+          :body    "This text is a little over the minimum compression size."}
+         {:headers {"accept-encoding" "gzip"}})]
+    (is (= {:status 200
+            :headers {"Content-Type"     "text/plain; charset=utf-8"
+                      "Content-Encoding" "gzip"}}
+           (dissoc response :body)))))
+
+(deftest minimum-content-length-test
   (let [response (ce/content-encoding-response
                   {:status 200
                    :headers {"Content-Type"   "text/plain; charset=utf-8"
@@ -52,6 +65,6 @@
                    :body    "Hello World"}
                   {:headers {"accept-encoding" "gzip"}})]
     (is (= {:status 200
-            :headers {"Content-Type"     "text/plain; charset=utf-8"
-                      "Content-Encoding" "gzip"}}
+            :headers {"Content-Type"   "text/plain; charset=utf-8"
+                      "Content-Length" "11"}}
            (dissoc response :body)))))
