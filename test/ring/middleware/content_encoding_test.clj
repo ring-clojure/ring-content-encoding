@@ -43,4 +43,4 @@
     (is (= {:status 200
             :headers {"Content-Type" "text/plain; charset=utf-8"}}
            (dissoc response :body)))))
-  
+
