@@ -52,10 +52,10 @@
 
 (defn content-encoding-response
   ([response request] (content-encoding-response response request {}))
-  ([response request options]
-   (let [{:keys [encoders] :or {encoders default-encoders}} options
-         {{:strs [accept-encoding]} :headers} request
-         encodings (parse-accept-encoding accept-encoding)]
+  ([response
+    {{:strs [accept-encoding]} :headers}
+    {:keys [encoders] :or {encoders default-encoders}}]
+   (let [encodings (parse-accept-encoding accept-encoding)]
      (if-some [encoding (best-encoding encodings encoders)]
        (if (= encoding "identity")
          response
