@@ -8,14 +8,25 @@
   (GZIPOutputStream. out))
 
 (def encoders
-  {"gzip" gzip-encoder})
+  {"gzip" gzip-encoder
+   "identity" identity})
 
-(defn- parse-accept-encoding [s]
-  (when s
-    (reduce #(assoc %1 %2 1.0) {} (str/split s #"\s*,\s*"))))
+(def re-accept-encoding
+  #"(?x)
+    ([!\#$%&'*\-+.0-9A-Z\^_`a-z\|~]+)              # token
+    (?:\s*;\s*q=(0(?:\.\d{0,3})?|1(?:\.0{0,3})))?  # weight")
+
+(defn- assoc-encoding [encodings enc-str]
+  (if-some [[_ enc weight] (re-matches re-accept-encoding enc-str)]
+    (assoc encodings enc (if weight (Double/parseDouble weight) 1.0))
+    encodings))
+    
+(defn- parse-accept-encoding [header]
+  (when header
+    (reduce assoc-encoding {} (str/split header #"\s*,\s*"))))
 
 (defn- best-encoding [encodings encoders]
-  (->> encodings (sort-by val) (map key) (filter encoders) first))
+  (->> encodings (sort-by val) reverse (map key) (filter encoders) first))
 
 (defn- encoded-body [body encoder]
   (reify p/StreamableResponseBody
@@ -31,7 +42,9 @@
   (let [{{:strs [accept-encoding]} :headers} request
         encodings (parse-accept-encoding accept-encoding)]
     (if-some [encoding (best-encoding encodings encoders)]
-      (apply-content-encoding response (find encoders encoding))
+      (if (= encoding "identity")
+        response
+        (apply-content-encoding response (find encoders encoding)))
       response)))
 
 (defn wrap-content-encoding [handler]

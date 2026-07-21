@@ -4,17 +4,18 @@
             [ring.middleware.content-encoding :as ce])
   (:import [java.io ByteArrayOutputStream]))
 
+(def ^:private plain-response
+  {:status  200
+   :headers {"Content-Type" "text/plain; charset=utf-8"}
+   :body    "Hello World"})
+
 (deftest no-content-encoding-test
-  (let [response {:status  200
-                  :headers {"Content-Type" "text/plain; charset=utf-8"}
-                  :body    "Hello World"}]
-    (is (= response (ce/content-encoding-response response {:headers {}})))))
+  (is (= plain-response
+         (ce/content-encoding-response plain-response {:headers {}}))))
 
 (deftest gzip-content-encoding-test
   (let [response (ce/content-encoding-response
-                  {:status  200
-                   :headers {"Content-Type" "text/plain; charset=utf-8"}
-                   :body    "Hello World"}
+                  plain-response
                   {:headers {"accept-encoding" "gzip"}})
         out      (ByteArrayOutputStream.)]
     (p/write-body-to-stream (:body response) response out)
@@ -28,11 +29,18 @@
 
 (deftest different-content-encodings-test
   (let [response (ce/content-encoding-response
-                  {:status  200
-                   :headers {"Content-Type" "text/plain; charset=utf-8"}
-                   :body    "Hello World"}
-                  {:headers {"accept-encoding" "gzip, deflate, identity"}})]
+                  plain-response
+                  {:headers {"accept-encoding" "gzip, deflate"}})]
     (is (= {:status 200
             :headers {"Content-Type"     "text/plain; charset=utf-8"
                       "Content-Encoding" "gzip"}}
            (dissoc response :body)))))
+
+(deftest weighted-encodings-test
+  (let [response (ce/content-encoding-response
+                  plain-response
+                  {:headers {"accept-encoding" "gzip;q=0.5, identity"}})]
+    (is (= {:status 200
+            :headers {"Content-Type" "text/plain; charset=utf-8"}}
+           (dissoc response :body)))))
+  
