@@ -1,8 +1,14 @@
 (ns ring.middleware.content-encoding
   (:require [clojure.string :as str]
             [ring.core.protocols :as p])
-  (:import [java.io OutputStream]
+  (:import [com.nixxcode.jvmbrotli.common BrotliLoader]
+           [com.nixxcode.jvmbrotli.enc BrotliOutputStream]
+           [java.io OutputStream]
            [java.util.zip DeflaterOutputStream GZIPOutputStream]))
+
+(defn brotli-encoder ^OutputStream [^OutputStream out]
+  (BrotliLoader/isBrotliAvailable)
+  (BrotliOutputStream. out))
 
 (defn gzip-encoder ^OutputStream [^OutputStream out]
   (GZIPOutputStream. out))
@@ -11,16 +17,19 @@
   (DeflaterOutputStream. out))
 
 (def default-encoder-weights
-  {"gzip"     3
+  {"br"       4
+   "gzip"     3
    "deflate"  2
    "identity" 1})
 
 (def default-encoder-minimums
-  {"deflate" 48
+  {"br"      50
+   "deflate" 48
    "gzip"    48})
 
 (def default-encoders
-  {"deflate"  deflate-encoder
+  {"br"       brotli-encoder
+   "deflate"  deflate-encoder
    "gzip"     gzip-encoder
    "identity" identity})
 
