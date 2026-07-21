@@ -2,20 +2,26 @@
   (:require [clojure.string :as str]
             [ring.core.protocols :as p])
   (:import [java.io OutputStream]
-           [java.util.zip GZIPOutputStream]))
+           [java.util.zip DeflaterOutputStream GZIPOutputStream]))
 
 (defn gzip-encoder ^OutputStream [^OutputStream out]
   (GZIPOutputStream. out))
 
+(defn deflate-encoder ^OutputStream [^OutputStream out]
+  (DeflaterOutputStream. out))
+
 (def default-encoder-weights
-  {"gzip" 2
+  {"gzip"     3
+   "deflate"  2
    "identity" 1})
 
 (def default-encoder-minimums
-  {"gzip" 48})
+  {"deflate" 48
+   "gzip"    48})
 
 (def default-encoders
-  {"gzip" gzip-encoder
+  {"deflate"  deflate-encoder
+   "gzip"     gzip-encoder
    "identity" identity})
 
 (def default-media-types
