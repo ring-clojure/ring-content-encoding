@@ -7,6 +7,10 @@
 (defn gzip-encoder ^OutputStream [^OutputStream out]
   (GZIPOutputStream. out))
 
+(def preferred-encoders
+  {"gzip" 2
+   "identity" 1})
+
 (def encoders
   {"gzip" gzip-encoder
    "identity" identity})
@@ -25,8 +29,16 @@
   (when header
     (reduce assoc-encoding {} (str/split header #"\s*,\s*"))))
 
-(defn- best-encoding [encodings encoders]
-  (->> encodings (sort-by val) reverse (map key) (filter encoders) first))
+(defn- encoding-comparator [a b]
+  (if (= (val a) (val b))
+    (> (preferred-encoders (key a)) (preferred-encoders (key b)))
+    (> (val a) (val b))))
+
+(defn- best-encoding [encodings]
+  (->> encodings
+       (filter (comp encoders key))
+       (sort encoding-comparator)
+       (some key)))
 
 (defn- encoded-body [body encoder]
   (reify p/StreamableResponseBody
@@ -41,7 +53,7 @@
 (defn content-encoding-response [response request]
   (let [{{:strs [accept-encoding]} :headers} request
         encodings (parse-accept-encoding accept-encoding)]
-    (if-some [encoding (best-encoding encodings encoders)]
+    (if-some [encoding (best-encoding encodings)]
       (if (= encoding "identity")
         response
         (apply-content-encoding response (find encoders encoding)))

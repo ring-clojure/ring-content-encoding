@@ -30,7 +30,7 @@
 (deftest different-content-encodings-test
   (let [response (ce/content-encoding-response
                   plain-response
-                  {:headers {"accept-encoding" "gzip, deflate"}})]
+                  {:headers {"accept-encoding" "gzip, deflate, identity"}})]
     (is (= {:status 200
             :headers {"Content-Type"     "text/plain; charset=utf-8"
                       "Content-Encoding" "gzip"}}
