@@ -118,3 +118,12 @@
     (is (= {:status 200
             :headers {"Content-Type" "image/png"}}
            (dissoc response :body)))))
+
+(deftest error-messages-not-compressed-test
+  (let [response  {:status  500
+                   :headers {"Content-Type" "text/plain; charset=utf-8"}
+                   :body    "Internal Error"}]
+    (is (= response
+           (ce/content-encoding-response
+            response
+            {:headers {"accept-encoding" "gzip"}})))))

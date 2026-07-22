@@ -40,6 +40,8 @@
    "identity" identity
    "zstd"     zstandard-encoder})
 
+(def default-status-codes #{200 404 403})
+
 (def default-media-types
   #{"application/eot"
     "application/font"
@@ -145,14 +147,15 @@
 
 (defn content-encoding-response
   ([response request] (content-encoding-response response request {}))
-  ([response
+  ([{:keys [status] :as response}
     {{:strs [accept-encoding]} :headers}
-    {:keys [encoders encoder-weights encoder-minimums media-types]
+    {:keys [encoders encoder-weights encoder-minimums media-types status-codes]
      :or {encoders         default-encoders
           encoder-weights  default-encoder-weights
           encoder-minimums default-encoder-minimums
-          media-types      default-media-types}}]
-   (if (allowed-media-type? response media-types)
+          media-types      default-media-types
+          status-codes     default-status-codes}}]
+   (if (and (allowed-media-type? response media-types) (status-codes status))
      (let [encodings (parse-accept-encoding accept-encoding)]
        (if-some [encoding (best-encoding encodings encoders encoder-weights)]
          (if (= encoding "identity")
