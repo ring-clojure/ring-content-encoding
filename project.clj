@@ -7,5 +7,6 @@
                  [org.ring-clojure/ring-core-protocols "1.15.5"]
                  [com.github.luben/zstd-jni "1.5.7-11"]
                  [com.nixxcode.jvmbrotli/jvmbrotli "0.2.0"]]
+  :global-vars {*warn-on-reflection* true}
   :profiles
   {:dev {:dependencies [[ring/ring-jetty-adapter "1.15.5"]]}})
