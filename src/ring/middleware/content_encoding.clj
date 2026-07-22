@@ -23,8 +23,24 @@
 (defn deflate-encoder ^OutputStream [^OutputStream out]
   (DeflaterOutputStream. out))
 
-(defn zstandard-encoder ^OutputStream [^OutputStream out]
-  (ZstdOutputStream. out))
+(defn zstandard-encoder
+  ([] (zstandard-encoder {}))
+  ([{:keys [chain-log hash-log job-size level long min-match overlap-log
+            search-log strategy target-length window-log workers]}]
+   (fn [^OutputStream out]
+     (-> (ZstdOutputStream. out)
+         (cond-> level         (.setLevel level))
+         (cond-> long          (.setLong long))
+         (cond-> workers       (.setWorkers workers))
+         (cond-> overlap-log   (.setOverlapLog overlap-log))
+         (cond-> job-size      (.setJobSize job-size))
+         (cond-> target-length (.setTargetLength target-length))
+         (cond-> min-match     (.setMinMatch min-match))
+         (cond-> search-log    (.setSearchLog search-log))
+         (cond-> chain-log     (.setChainLog chain-log))
+         (cond-> hash-log      (.setHashLog hash-log))
+         (cond-> window-log    (.setWindowLog window-log))
+         (cond-> strategy      (.setStrategy strategy))))))
 
 (def default-encoder-weights
   {"zstd"     5
@@ -44,7 +60,7 @@
    "deflate"  deflate-encoder
    "gzip"     gzip-encoder
    "identity" identity
-   "zstd"     zstandard-encoder})
+   "zstd"     (zstandard-encoder)})
 
 (def default-status-codes #{200 404 403})
 

@@ -84,6 +84,23 @@
     (is (= [40 -75 47 -3 0 88 89 0 0 72 101 108 108 111 32 87 111 114 108 100]
            (vec (.toByteArray out))))))
 
+(deftest zstd-content-encoding-params-test
+  (let [response (ce/content-encoding-response
+                  {:status  200
+                   :headers {"Content-Type" "text/plain; charset=utf-8"}
+                   :body    "aaaaaaaaabbbbbbbbcccccdddeeeaaaabbbbbbbabbab"}
+                  {:headers {"accept-encoding" "zstd"}}
+                  {:encoders {"zstd" (ce/zstandard-encoder {:level 1})}})
+        out      (ByteArrayOutputStream.)]
+    (p/write-body-to-stream (:body response) response out)
+    (is (= {:status 200
+            :headers {"Content-Type"     "text/plain; charset=utf-8"
+                      "Content-Encoding" "zstd"}}
+           (dissoc response :body)))
+    (is (= [40 -75 47 -3 0 72 -19 0 0 -104 97 97 98 99 99 99 99 99 100 100 100
+            101 101 101 97 98 98 97 98 3 0 58 -115 -125 -52 50 -48 6]
+           (vec (.toByteArray out))))))
+
 (deftest different-content-encodings-test
   (let [response (ce/content-encoding-response
                   plain-response
