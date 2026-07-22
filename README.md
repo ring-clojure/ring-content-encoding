@@ -1,8 +1,9 @@
 # Ring-Content-Encoding [![Build Status](https://github.com/ring-clojure/ring-content-encoding/actions/workflows/test.yml/badge.svg)](https://github.com/ring-clojure/ring-content-encoding/actions/workflows/test.yml)
 
 [Ring][] middleware for adding modern response compression to your web
-application. Supports [Brotli][], [Deflate][], [GZip][] and
-[ZStandard][] content encoding.
+application. It supports [Brotli][], [Deflate][], [GZip][] and
+[ZStandard][] content encoding, and has sensible defaults for when to
+apply compression and when not avoid it (such as for image formats).
 
 > [!NOTE]
 > Many reverse proxies and CDNs will automatically handle content
