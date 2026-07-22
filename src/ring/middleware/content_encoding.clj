@@ -3,13 +3,19 @@
             [ring.core.protocols :as p])
   (:import [com.github.luben.zstd ZstdOutputStream]
            [com.nixxcode.jvmbrotli.common BrotliLoader]
-           [com.nixxcode.jvmbrotli.enc BrotliOutputStream]
+           [com.nixxcode.jvmbrotli.enc BrotliOutputStream Encoder$Parameters]
            [java.io OutputStream]
            [java.util.zip DeflaterOutputStream GZIPOutputStream]))
 
-(defn brotli-encoder ^OutputStream [^OutputStream out]
-  (assert (BrotliLoader/isBrotliAvailable))
-  (BrotliOutputStream. out))
+(defn brotli-encoder
+  ([] (brotli-encoder {}))
+  ([{:keys [quality window]}]
+   (assert (BrotliLoader/isBrotliAvailable))
+   (let [params (doto (Encoder$Parameters.)
+                  (.setQuality (or quality -1))
+                  (.setWindow  (or window -1)))]
+     (fn [^OutputStream out]
+       (BrotliOutputStream. out params)))))
 
 (defn gzip-encoder ^OutputStream [^OutputStream out]
   (GZIPOutputStream. out))
@@ -34,7 +40,7 @@
    "zstd"    50})
 
 (def default-encoders
-  {"br"       brotli-encoder
+  {"br"       (brotli-encoder)
    "deflate"  deflate-encoder
    "gzip"     gzip-encoder
    "identity" identity

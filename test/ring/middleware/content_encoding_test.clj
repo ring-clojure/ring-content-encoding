@@ -54,6 +54,23 @@
     (is (= [11 5 -128 72 101 108 108 111 32 87 111 114 108 100 3]
            (vec (.toByteArray out))))))
 
+(deftest br-content-encoding-params-test
+  (let [response (ce/content-encoding-response
+                  {:status  200
+                   :headers {"Content-Type" "text/plain; charset=utf-8"}
+                   :body    "aaaaaaaaabbbbbbbbcccccdddeeeaaaabbbbbbbabbab"}
+                  {:headers {"accept-encoding" "br"}}
+                  {:encoders {"br" (ce/brotli-encoder {:quality 1})}})
+        out      (ByteArrayOutputStream.)]
+    (p/write-body-to-stream (:body response) response out)
+    (is (= {:status 200
+            :headers {"Content-Type"     "text/plain; charset=utf-8"
+                      "Content-Encoding" "br"}}
+           (dissoc response :body)))
+    (is (= [-117 21 0 0 -128 -86 -86 -86 -22 -1 112 58 19 10 11 -94 114 75 126
+            112 40 14 24 -57 6 112 1 14 43 -113 115 50 110 -5 -1 42 64 100]
+           (vec (.toByteArray out))))))
+
 (deftest zstd-content-encoding-test
   (let [response (ce/content-encoding-response
                   plain-response
