@@ -93,9 +93,10 @@
 (def default-encoder-weights
   "Weightings for which encoder to favor when the client has no preference.
   Higher values win out over lower ones."
-  {"zstd"     5
-   "br"       4
-   "gzip"     3
+  {"zstd"     6
+   "br"       5
+   "gzip"     4
+   "x-gzip"   3
    "deflate"  2
    "identity" 1})
 
@@ -105,6 +106,7 @@
   {"br"      50
    "deflate" 48
    "gzip"    48
+   "x-gzip"  48
    "zstd"    50})
 
 (def default-encoders
@@ -112,6 +114,7 @@
   {"br"      (brotli-encoder)
    "deflate" (deflate-encoder)
    "gzip"    (gzip-encoder)
+   "x-gzip"  (gzip-encoder)
    "zstd"    (zstandard-encoder)})
 
 (def default-status-codes
