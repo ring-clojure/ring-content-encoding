@@ -12,10 +12,12 @@
 (defn brotli-encoder
   "Returns a function that adds [Brotli][] compression to an OutputStream.
   Accepts the following options:
+
   - `:quality` - compression quality
   - `:window` - log2(LZ window size)
   
   [brotli]: https://brotli.org/"
+  {:arglists '([] [options])}
   ([] (brotli-encoder {}))
   ([{:keys [quality window]}]
    (assert (BrotliLoader/isBrotliAvailable))
@@ -28,7 +30,9 @@
 (defn gzip-encoder
   "Returns a function that adds GZip compression to an OutputStream.
   Accepts the following options:
+
   - `:level` - the compression level"
+  {:arglists '([] [options])}
   ([] (gzip-encoder {}))
   ([{:keys [level]}]
    (fn [^OutputStream out]
@@ -37,7 +41,9 @@
 (defn deflate-encoder
   "Returns a function that adds DEFLATE compression to an OutputStream.
   Accepts the following options:
+
   - `:level` - the compression level"
+  {:arglists '([] [options])}
   ([] (deflate-encoder {}))
   ([{:keys [level]}]
    (fn [^OutputStream out]
@@ -47,9 +53,11 @@
 (defn zstandard-encoder
   "Returns a function that adds [ZStandard][] compression to an OutputStream.
   Accepts the following basic options:
+
   - `:level` - the compression level
 
   And the following advanced options:
+
   - `:chain-log` - log2(multi-probe search table size)
   - `:hash-log` - log2(initial probe table size)
   - `:job-size` - size of compression job when workers > 1
@@ -63,6 +71,7 @@
   - `:workers` - number of worker threads
   
   [zstandard]: https://facebook.github.io/zstd/"
+  {:arglists '([] [options])}
   ([] (zstandard-encoder {}))
   ([{:keys [chain-log hash-log job-size level long min-match overlap-log
             search-log strategy target-length window-log workers]}]
@@ -242,6 +251,7 @@
   "Wrap a Ring handler to apply appropriate Content-Encoding to a response,
   based on the types included in the Accept-Encoding header on the request.
   Accepts the following options:
+
   - `:encoders` - a map of encoder names to functions that add encoding to
     OutputStreams.
   - `:encoder-weights` - a map of encoder names to numerial weights. When the
