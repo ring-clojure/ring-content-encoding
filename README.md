@@ -44,6 +44,10 @@ types of content encoding (i.e. compression).
   (wrap-content-encoding handler))
 ```
 
+## Documentation
+
+- [API Documentation](https://ring-clojure.github.io/ring-content-encoding/ring.middleware.content-encoding.html)
+
 ## License
 
 Copyright © 2026 James Reeves
