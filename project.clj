@@ -1,4 +1,4 @@
-(defproject org.ring-clojure/ring-content-encoding "0.1.0-SNAPSHOT"
+(defproject org.ring-clojure/ring-content-encoding "0.1.0"
   :description "Ring middleware for response content encoding (compression)"
   :url "https://github.com/ring-clojure/ring-content-encoding"
   :license {:name "The MIT License"
