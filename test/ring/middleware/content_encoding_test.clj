@@ -41,6 +41,23 @@
     (is (= [120 -100 -13 72 -51 -55 -55 87 8 -49 47 -54 73 1 0 24 11 4 29]
            (vec (.toByteArray out))))))
 
+(deftest deflate-content-encoding-params-test
+  (let [response (ce/content-encoding-response
+                  {:status  200
+                   :headers {"Content-Type" "text/plain; charset=utf-8"}
+                   :body    "aaaaaaaaabbbbbbbbcccccdddeeeaaaabbbbbbbabbab"}
+                  {:headers {"accept-encoding" "deflate"}}
+                  {:encoders {"deflate" (ce/deflate-encoder {:level 1})}})
+        out      (ByteArrayOutputStream.)]
+    (p/write-body-to-stream (:body response) response out)
+    (is (= {:status 200
+            :headers {"Content-Type"     "text/plain; charset=utf-8"
+                      "Content-Encoding" "deflate"}}
+           (dissoc response :body)))
+    (is (= [120 1 75 76 -124 -126 36 40 72 6 -127 -108 -108 -108 -44 -44 84
+            -112 12 84 52 49 41 41 49 9 0 123 43 16 -34]
+           (vec (.toByteArray out))))))
+
 (deftest br-content-encoding-test
   (let [response (ce/content-encoding-response
                   plain-response
