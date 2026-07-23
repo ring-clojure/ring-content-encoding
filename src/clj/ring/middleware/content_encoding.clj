@@ -5,7 +5,8 @@
            [com.nixxcode.jvmbrotli.common BrotliLoader]
            [com.nixxcode.jvmbrotli.enc BrotliOutputStream Encoder$Parameters]
            [java.io OutputStream]
-           [java.util.zip Deflater DeflaterOutputStream GZIPOutputStream]))
+           [java.util.zip Deflater DeflaterOutputStream]
+           [ring.middleware.content_encoding GZIPOutputStream]))
 
 (defn brotli-encoder
   ([] (brotli-encoder {}))
@@ -17,8 +18,11 @@
      (fn [^OutputStream out]
        (BrotliOutputStream. out params)))))
 
-(defn gzip-encoder ^OutputStream [^OutputStream out]
-  (GZIPOutputStream. out))
+(defn gzip-encoder
+  ([] (gzip-encoder {}))
+  ([{:keys [level]}]
+   (fn [^OutputStream out]
+     (GZIPOutputStream. out (or level Deflater/DEFAULT_COMPRESSION)))))
 
 (defn deflate-encoder
   ([] (deflate-encoder {}))
@@ -62,7 +66,7 @@
 (def default-encoders
   {"br"      (brotli-encoder)
    "deflate" (deflate-encoder)
-   "gzip"    gzip-encoder
+   "gzip"    (gzip-encoder)
    "zstd"    (zstandard-encoder)})
 
 (def default-status-codes #{200 404 403})
