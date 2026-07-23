@@ -34,7 +34,7 @@
                    :headers {"Content-Type" "text/plain; charset=utf-8"}
                    :body    "aaaaaaaaabbbbbbbbcccccdddeeeaaaabbbbbbbabbab"}
                   {:headers {"accept-encoding" "gzip"}}
-                  {:encoders {"gzip" (ce/gzip-encoder {:level 1})}})
+                  {:encoders {"gzip" (ce/gzip-encoder {:level 9})}})
         out      (ByteArrayOutputStream.)]
     (p/write-body-to-stream (:body response) response out)
     (is (= {:status 200
@@ -42,8 +42,7 @@
                       "Content-Encoding" "gzip"}}
            (dissoc response :body)))
     (is (= [31 -117 8 0 0 0 0 0 0 -1 75 76 -124 -126 36 40 72 6 -127 -108 -108
-            -108 -44 -44 84 -112 12 84 52 49 41 41 49 9 0 48 -37 -99 117 44 0
-            0 0]
+            -108 -44 -44 84 36 -31 68 16 2 0 48 -37 -99 117 44 0 0 0]
            (vec (.toByteArray out))))))
 
 (deftest deflate-content-encoding-test
