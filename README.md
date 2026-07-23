@@ -6,9 +6,10 @@ application. It supports [Brotli][], [Deflate][], [GZip][] and
 apply compression and when not avoid it (such as for image formats).
 
 > [!NOTE]
-> Many reverse proxies and CDNs will automatically handle content
-> encoding for you. However, you may want more control over how content
-> encoding is handled, or you may not be using a reverse proxy at all.
+> Many reverse proxies and CDNs will handle content encoding for you.
+> However, you may want more control over how content encoding is
+> handled, or you may not be using a reverse proxy at all. This is where
+> this middleware comes in useful.
 
 [ring]: https://github.com/ring-clojure/ring
 [brotli]: https://github.com/google/brotli
