@@ -1,4 +1,5 @@
 (ns ring.middleware.content-encoding
+  "Middleware for adding Content-Encoding to a response."
   (:require [clojure.string :as str]
             [ring.core.protocols :as p])
   (:import [com.github.luben.zstd ZstdOutputStream]
@@ -9,6 +10,12 @@
            [ring.middleware.content_encoding GZIPOutputStream]))
 
 (defn brotli-encoder
+  "Returns a function that adds [Brotli][] compression to an OutputStream.
+  Accepts the following options:
+  - `:quality` - compression quality
+  - `:window` - log2(LZ window size)
+  
+  [brotli]: https://brotli.org/"
   ([] (brotli-encoder {}))
   ([{:keys [quality window]}]
    (assert (BrotliLoader/isBrotliAvailable))
@@ -19,12 +26,18 @@
        (BrotliOutputStream. out params)))))
 
 (defn gzip-encoder
+  "Returns a function that adds GZip compression to an OutputStream.
+  Accepts the following options:
+  - `:level` - the compression level"
   ([] (gzip-encoder {}))
   ([{:keys [level]}]
    (fn [^OutputStream out]
      (GZIPOutputStream. out (or level Deflater/DEFAULT_COMPRESSION)))))
 
 (defn deflate-encoder
+  "Returns a function that adds DEFLATE compression to an OutputStream.
+  Accepts the following options:
+  - `:level` - the compression level"
   ([] (deflate-encoder {}))
   ([{:keys [level]}]
    (fn [^OutputStream out]
@@ -32,6 +45,24 @@
        (DeflaterOutputStream. out (Deflater. level))))))
 
 (defn zstandard-encoder
+  "Returns a function that adds [ZStandard][] compression to an OutputStream.
+  Accepts the following basic options:
+  - `:level` - the compression level
+
+  And the following advanced options:
+  - `:chain-log` - log2(multi-probe search table size)
+  - `:hash-log` - log2(initial probe table size)
+  - `:job-size` - size of compression job when workers > 1
+  - `:long` - enable long distance matching
+  - `:min-match` - min match size for long distance matcher
+  - `:overlap-log` - overlap size as fraction of window size
+  - `:search-log` - log2(number search attempts)
+  - `:strategy` - see ZSTD_strategy enum definition
+  - `:target-length` - depends on strategy
+  - `:window-log` - log2(max allowed back-reference distance) 
+  - `:workers` - number of worker threads
+  
+  [zstandard]: https://facebook.github.io/zstd/"
   ([] (zstandard-encoder {}))
   ([{:keys [chain-log hash-log job-size level long min-match overlap-log
             search-log strategy target-length window-log workers]}]
@@ -51,6 +82,8 @@
          (cond-> strategy      (.setStrategy strategy))))))
 
 (def default-encoder-weights
+  "Weightings for which encoder to favor when the client has no preference.
+  Higher values win out over lower ones."
   {"zstd"     5
    "br"       4
    "gzip"     3
@@ -58,20 +91,27 @@
    "identity" 1})
 
 (def default-encoder-minimums
+  "The minimum size in bytes at which to apply the compression. Bodies that
+  are too small typically don't benefit from compression."
   {"br"      50
    "deflate" 48
    "gzip"    48
    "zstd"    50})
 
 (def default-encoders
+  "A map of encoder names to their respective default functions."
   {"br"      (brotli-encoder)
    "deflate" (deflate-encoder)
    "gzip"    (gzip-encoder)
    "zstd"    (zstandard-encoder)})
 
-(def default-status-codes #{200 404 403})
+(def default-status-codes
+  "A set of default status codes that will get content encoding."
+  #{200 404 403})
 
 (def default-media-types
+  "A set of default media types that will get content encoding. Media types that
+  already have compression (such as images) should not be included in this set."
   #{"application/eot"
     "application/font"
     "application/font-sfnt"
@@ -175,6 +215,10 @@
       (contains? media-types media-type))))
 
 (defn content-encoding-response
+  "Add Content-Encoding to a response, based on the types included in the
+  Accept-Encoding header on the request. See [[wrap-content-encoding]] for
+  information on the supported options."
+  {:arglists '([response request] [response request options])}
   ([response request] (content-encoding-response response request {}))
   ([{:keys [status] :as response}
     {{:strs [accept-encoding]} :headers}
@@ -195,6 +239,20 @@
      response)))
 
 (defn wrap-content-encoding
+  "Wrap a Ring handler to apply appropriate Content-Encoding to a response,
+  based on the types included in the Accept-Encoding header on the request.
+  Accepts the following options:
+  - `:encoders` - a map of encoder names to functions that add encoding to
+    OutputStreams.
+  - `:encoder-weights` - a map of encoder names to numerial weights. When the
+    client doesn't favor an encoder, the highest weighted encoder is used.
+  - `:encoder-minimums` - a map of encoder names to the minimum size in bytes
+    of the body (as set by the Content-Length header) at which that encoder is
+    applied
+  - `:media-types` - a set of media types that are allowed to have content
+    encoding
+  - `:status-codes` - a set of HTTP response status codes that are allowed to
+    have content encoding"
   ([handler] (wrap-content-encoding handler {}))
   ([handler options]
    (fn
