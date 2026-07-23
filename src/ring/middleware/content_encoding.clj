@@ -60,11 +60,10 @@
    "zstd"    50})
 
 (def default-encoders
-  {"br"       (brotli-encoder)
-   "deflate"  (deflate-encoder)
-   "gzip"     gzip-encoder
-   "identity" identity
-   "zstd"     (zstandard-encoder)})
+  {"br"      (brotli-encoder)
+   "deflate" (deflate-encoder)
+   "gzip"    gzip-encoder
+   "zstd"    (zstandard-encoder)})
 
 (def default-status-codes #{200 404 403})
 
@@ -137,7 +136,7 @@
 
 (defn- best-encoding [encodings encoders encoder-weights]
   (->> encodings
-       (filter (comp encoders key))
+       (filter #(or (= (key %) "identity") (encoders (key %))))
        (sort (encoding-comparator encoder-weights))
        (some key)))
 
